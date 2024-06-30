@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"main/internal/bootstrap"
 	"main/internal/config"
 	"main/internal/repositories/autorepository/autosqlx"
@@ -17,7 +17,8 @@ import (
 func Run(cfg config.Config) error {
 	db, err := bootstrap.InitSqlxDB(cfg)
 	if err != nil {
-		return err
+		slog.Error("Failed to initialize database connection. Error message: %v", err)
+		os.Exit(1)
 	}
 
 	autoService := autoservice.New(autosqlx.New(db))
@@ -30,8 +31,9 @@ func Run(cfg config.Config) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			log.Fatal(err)
+		err := server.ListenAndServe()
+		if err != nil {
+			slog.Warn("", "msg", err)
 		}
 	}()
 
@@ -44,9 +46,9 @@ func gracefullyShutdown(ctx context.Context, cancel context.CancelFunc, server *
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	defer signal.Stop(ch)
 	<-ch
-	if err := server.Shutdown(ctx); err != nil {
-		// log.Warning(err)
-		log.Println(err)
+	err := server.Shutdown(ctx)
+	if err != nil {
+		slog.Warn("", "msg", err)
 	}
 	cancel()
 }

@@ -7,5 +7,5 @@ import (
 )
 
 func InitSqlxDB(cfg config.Config) (*sqlx.DB, error) {
-	return sqlx.Connect(cfg.DBDriver, cfg.DBName)
+	return sqlx.Connect(cfg.DBDriver, cfg.StoragePath+cfg.DBName)
 }
